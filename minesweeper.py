@@ -2,11 +2,10 @@ import pyautogui
 import time
 import webbrowser
 import numpy as np
-#import cv2
 from PIL import Image
 
 #dict_sum_avg = {"564":33, "576":-1, "497":10, "436":20, "476":30}
-dict_sum_all = {"294252":-2, "331407":-1, "322752":0, "291936":1, "260480":2, "279096":3, "262272":4, "251520":5, "271552":6} # -2=flag, -1=unclicked, 0=clickedEmpty
+dict_sum_all = {"294252":-2, "331407":-1, "322752":0, "291936":1, "260480":2, "279096":3, "262272":4, "251520":5, "271552":6, "234597":99} # -2=flag, -1=unclicked, 0=clickedEmpty
 
 class Tile:
 	def __init__(self, x, y, num=-1):
@@ -15,7 +14,7 @@ class Tile:
 		self.num = num
 
 	def __str__(self):
-		return "({}, {}) {} ".format(self.x, self.y, self.num)
+		return "({}, {}): {} ".format(self.x, self.y, self.num)
 
 	def str_pad(self):
 		s = str(self.num)
@@ -34,9 +33,8 @@ def open_webpage(url="http://minesweeperonline.com/#150", sleep=2.7):
 def uid_from_img(img):
 	return np.sum(img)
 	#return np.sum( np.where(img==[192,192,192], [0,0,0], img) ) # replaces gray color with 0s
-	
-	#sub_img_small = np.array(sub_img.resize((1,1), Image.ANTIALIAS))[0][0]
-	#sub_img_small_avg = np.sum(sub_img_small)
+	#sub_img_small = np.array(sub_img.resize((1,1), Image.ANTIALIAS))[0][0] # this can't differentiate between 3 and 4?
+	#return np.sum(sub_img_small)
 
 def num_count(tiles, num):
 	count = 0
@@ -61,10 +59,9 @@ mouse(1,1)
 num_width = 30 # 30
 num_height = 16 # 16
 
-topleft = pyautogui.locateOnScreen('tilec.png')
+topleft = pyautogui.locateOnScreen('tile.png')
 
 tile_size = topleft[2] # assumes width and height are the same
-
 roi = [ topleft[0], topleft[1], topleft[2]*num_width, topleft[3]*num_height ] # xywh
 
 # outline roi
@@ -73,33 +70,27 @@ roi = [ topleft[0], topleft[1], topleft[2]*num_width, topleft[3]*num_height ] # 
 #time.sleep(0.1)
 
 # activates first squares
-mouse(roi[0]+roi[2]/2, roi[1]+roi[3]/2, click=True) # middle
-#mouse(roi[0]+2, roi[1]+2, click=True) # top left
+mouse(roi[0]+roi[2]/2, roi[1]+roi[3]/2, click=True) # click middle
+#mouse(roi[0]+2, roi[1]+2, click=True) # click top left
 mouse(1,1)
+
 
 def get_grid_locate():
 	grid = []
-	#blank = list( pyautogui.locateAllOnScreen('tile.png') )
 
 	#for y in range(start[1], start[1]+(bx*ts), ts):
 	for tile_y in range(0, num_height):
 		row = []
 		#for x in range(start[0], start[0]+(by*ts), ts):
 		for tile_x in range(0, num_width):
-
 			screen_x = roi[0] + tile_x*tile_size # screen pixel coordinates
 			screen_y = roi[1] + tile_y*tile_size
-
-
-			num = -1 # error tile
-
 			#print("x,y: {},{}  sx: {} sy: {}  ss: {}".format(x, y, sx, sy, ss))
 
-			#print( str(pyautogui.locateOnScreen('tileb.png', region=(sx, sy, ss, ss))), end=", ")
-			#print( str(pyautogui.locateOnScreen('1b.png', region=(sx, sy, ss, ss))) )
 			region_buffer = 2 
 			region = (screen_x-region_buffer, screen_y-region_buffer, tile_size+region_buffer*2, tile_size+region_buffer*2)
 
+			num = -1 # error tile
 			if pyautogui.locateOnScreen('tilec.png', region=region, grayscale=True): # unclicked
 				num = 0
 			elif pyautogui.locateOnScreen('emptyc.png', region=region, grayscale=True): # empty
@@ -109,26 +100,14 @@ def get_grid_locate():
 			else: # must be a number square
 				pass
 
-
 			# elif pyautogui.locateOnScreen('1c.png', region=region, grayscale=True):
 			# 	num = 1
 			# elif pyautogui.locateOnScreen('2b.png', region=region, grayscale=True):
 			# 	num = 2
-			# elif pyautogui.locateOnScreen('3b.png', region=(x, y, ts, ts)):
-			# 	num = 3
-			# elif pyautogui.locateOnScreen('4b.png', region=(x, y, ts, ts)):
-			# 	num = 4
-			# elif pyautogui.locateOnScreen('5b.png', region=(x, y, ts, ts)):
-			# 	num = 5
 
 			row.append(num)
-
 		grid.append(row)
 
-
-	#pyautogui.click(start)
-	#print(str(blank[:2]))
-	#print(str(start))
 	return grid
 
 def get_grid_color():
@@ -186,26 +165,36 @@ def do_clicks(grid):
 						left_click_tiles.append(t)
 
 	for right_click_tile in right_click_tiles:
-		mouse(2+roi[0]+right_click_tile.x*tile_size, 2+roi[1]+right_click_tile.y*tile_size, dur=0.1, click=True, button="right")
+		mouse(2+roi[0]+right_click_tile.x*tile_size, 2+roi[1]+right_click_tile.y*tile_size, dur=0, click=True, button="right")
 
-	if len(left_click_tiles) == 0: # there are no easy clicks
-		return False
-
+	#print("len lc: " + str(len(left_click_tiles)))
 	for left_click_tile in left_click_tiles:
-		mouse(2+roi[0]+left_click_tile.x*tile_size, 2+roi[1]+left_click_tile.y*tile_size, dur=0.1, click=True, button="left")
+		mouse(2+roi[0]+left_click_tile.x*tile_size, 2+roi[1]+left_click_tile.y*tile_size, dur=0, click=True, button="left")
+		#print("lc: {}".format(left_click_tile))
+
+	if len(left_click_tiles) == 0: # there are no easy clicks, so the grid needs to be rescanned
+		return False
 
 	return True
 
 
+# count = 0
+running = True
+while running:
+	# print("looping {}...".format(count))
+	# c += 1
 
-while True:
 	grid = get_grid_color()
 
 	for row in grid: # prints unknown tile nums
-		row_text = ""
+		#row_text = ""
 		for t in row:
-			if t.num > 100:
-				print(t)
+			if t.num > 500: # there's an unknown number
+				print("unknown: " + str(t))
+			if t.num == 99: # there's a bomb on the screen!
+				print("bomb detected!")
+				running = False
+				break
 		# 	row_text += t.str_pad() + " "
 		# print(row_text)
 
@@ -217,8 +206,9 @@ while True:
 	did_click = do_clicks(grid)
 
 	if did_click == False:
-		break
-
+		if do_clicks(grid) == False: # check twice to ensure there are no missed just-updated tiles
+			running = False
+			break
 
 print("done. ")
 mouse(mouse_start[0], mouse_start[1]) # put mouse back in original position
