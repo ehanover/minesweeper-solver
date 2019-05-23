@@ -2,9 +2,11 @@ import pyautogui
 import time
 import webbrowser
 import numpy as np
-import cv2
+#import cv2
 from PIL import Image
 
+#dict_sum_avg = {"564":33, "576":-1, "497":10, "436":20, "476":30}
+dict_sum_all = {"294252":-2, "331407":-1, "322752":0, "291936":1, "260480":2, "279096":3, "262272":4, "251520":5, "271552":6} # -2=flag, -1=unclicked, 0=clickedEmpty
 
 class Tile:
 	def __init__(self, x, y, num=-1):
@@ -19,17 +21,6 @@ class Tile:
 		s = str(self.num)
 		return " "*max((2-len(s)), 0) + s # TODO optimize
 
-#dict_sum_avg = {"564":33, "576":-1, "497":10, "436":20, "476":30}
-dict_sum_all = {"294252":-2, "331407":-1, "322752":0, "291936":1, "260480":2, "279096":3, "262272":4, "251520":5} # -2=flag, -1=unclicked, 0=clickedEmpty
-
-# x, y = pyautogui.locateCenterOnScreen('tile.png')
-# pyautogui.click(x, y)
-
-# for pos in pyautogui.locateAllOnScreen('tile.png'):
-# 	print(pos)
-
-#time.sleep(2)
-mouse_start = pyautogui.position()
 
 def mouse(x, y, dur=0, click=False, button="left"):
 	pyautogui.moveTo(x, y, duration=dur)
@@ -62,6 +53,8 @@ def neighbors(x, y, grid):
 				tiles.append(grid[y+i][x+j])
 	return tiles
 
+
+mouse_start = pyautogui.position()
 open_webpage()
 mouse(1,1)
 
@@ -70,17 +63,14 @@ num_height = 16 # 16
 
 topleft = pyautogui.locateOnScreen('tilec.png')
 
-#ts = 21#start[2]
-#ss = start[2] + 2
-
 tile_size = topleft[2] # assumes width and height are the same
 
 roi = [ topleft[0], topleft[1], topleft[2]*num_width, topleft[3]*num_height ] # xywh
 
 # outline roi
-mouse(roi[0], roi[1], 0.1)
-mouse(roi[0]+roi[2], roi[1]+roi[3], 0.1)
-time.sleep(0.1)
+#mouse(roi[0], roi[1], 0.1)
+#mouse(roi[0]+roi[2], roi[1]+roi[3], 0.1)
+#time.sleep(0.1)
 
 # activates first squares
 mouse(roi[0]+roi[2]/2, roi[1]+roi[3]/2, click=True) # middle
@@ -195,28 +185,23 @@ def do_clicks(grid):
 					if t.num == -1 and t not in left_click_tiles:
 						left_click_tiles.append(t)
 
-
+	for right_click_tile in right_click_tiles:
+		mouse(2+roi[0]+right_click_tile.x*tile_size, 2+roi[1]+right_click_tile.y*tile_size, dur=0.1, click=True, button="right")
 
 	if len(left_click_tiles) == 0: # there are no easy clicks
 		return False
 
-	for right_click_tile in right_click_tiles:
-		mouse(2+roi[0]+right_click_tile.x*tile_size, 2+roi[1]+right_click_tile.y*tile_size, dur=0.1, click=True, button="right")
-
 	for left_click_tile in left_click_tiles:
 		mouse(2+roi[0]+left_click_tile.x*tile_size, 2+roi[1]+left_click_tile.y*tile_size, dur=0.1, click=True, button="left")
 
-
 	return True
-
-
 
 
 
 while True:
 	grid = get_grid_color()
 
-	for row in grid:
+	for row in grid: # prints unknown tile nums
 		row_text = ""
 		for t in row:
 			if t.num > 100:
@@ -233,7 +218,6 @@ while True:
 
 	if did_click == False:
 		break
-
 
 
 print("done. ")
