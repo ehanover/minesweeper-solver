@@ -47,7 +47,7 @@ def neighbors(x, y, grid):
 	tiles = []
 	for i in range(-1, 2):
 		for j in range(-1, 2):
-			if not (i == 0 and j == 0) and x+j<num_width and y+i<num_height: # this tile isn't at (x,y)
+			if not (i == 0 and j == 0) and x+j<num_width and y+i<num_height: # this tile isn't at (x,y) and isnt out of the grid
 				tiles.append(grid[y+i][x+j])
 	return tiles
 
