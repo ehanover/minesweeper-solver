@@ -6,6 +6,7 @@ from PIL import Image
 
 #dict_sum_avg = {"564":33, "576":-1, "497":10, "436":20, "476":30}
 dict_sum_all = {"294252":-2, "331407":-1, "322752":0, "291936":1, "260480":2, "279096":3, "262272":4, "251520":5, "271552":6, "234597":99} # -2=flag, -1=unclicked, 0=clickedEmpty
+#dict_sum_all_reduced = {"294252":-2, "331407":-1, "322752":0, "291936":1, "260480":2, "279096":3, "262272":4, "251520":5, "271552":6, "234597":99} # -2=flag, -1=unclicked, 0=clickedEmpty
 
 class Tile:
 	def __init__(self, x, y, num=-1):
@@ -31,7 +32,7 @@ def open_webpage(url="http://minesweeperonline.com/#150", sleep=2.7):
 	time.sleep(sleep)
 
 def uid_from_img(img):
-	return np.sum(img)
+	return int(np.sum(img)/10)
 	#return np.sum( np.where(img==[192,192,192], [0,0,0], img) ) # replaces gray color with 0s
 	#sub_img_small = np.array(sub_img.resize((1,1), Image.ANTIALIAS))[0][0] # this can't differentiate between 3 and 4?
 	#return np.sum(sub_img_small)
@@ -53,17 +54,17 @@ def neighbors(x, y, grid):
 
 
 mouse_start = pyautogui.position()
-open_webpage()
+#open_webpage()
 mouse(1,1)
 
 num_width = 30 # 30
 num_height = 16 # 16
 
-topleft = pyautogui.locateOnScreen('tile.png')
+topleft = pyautogui.locateOnScreen('tile.png', confidence=0.9)
 
 tile_size = topleft[2] # assumes width and height are the same
 roi = [ topleft[0], topleft[1], topleft[2]*num_width, topleft[3]*num_height ] # xywh
-
+print(roi)
 # outline roi
 #mouse(roi[0], roi[1], 0.1)
 #mouse(roi[0]+roi[2], roi[1]+roi[3], 0.1)
