@@ -160,7 +160,8 @@ def draw(disp):
 	# global show_bombs
 	# print("drawing, sb=", show_bombs)
 
-	disp.fill((192, 192, 192))
+	#disp.fill((192, 192, 192))
+	disp.fill((0, 0, 0))
 
 	for j in range(num_height):
 		for i in range(num_width):

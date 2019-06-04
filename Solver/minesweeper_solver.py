@@ -4,9 +4,12 @@ import webbrowser
 import numpy as np
 from PIL import Image
 
-#dict_sum_avg = {"564":33, "576":-1, "497":10, "436":20, "476":30}
-dict_sum_all = {"294252":-2, "331407":-1, "322752":0, "291936":1, "260480":2, "279096":3, "262272":4, "251520":5, "271552":6, "234597":99} # -2=flag, -1=unclicked, 0=clickedEmpty
+# -2:flag -1:unclicked 0:noNum 1:one 2:two ... 99:bomb
+#dict_sum_all = {"294252":-2, "331407":-1, "322752":0, "291936":1, "260480":2, "279096":3, "262272":4, "251520":5, "271552":6, "234597":99} # -2=flag, -1=unclicked, 0=clickedEmpty
 #dict_sum_all_reduced = {"294252":-2, "331407":-1, "322752":0, "291936":1, "260480":2, "279096":3, "262272":4, "251520":5, "271552":6, "234597":99} # -2=flag, -1=unclicked, 0=clickedEmpty
+#dict_sum_2 = {"29425":-2, "33140":-1, "32275":0, "29193":1, "26048":2, "27909":3, "26227":4, "25152":5, "23459":99}
+#dict_sum_3 = {"294":-2, "331": -1, "322":0, "291":1, "260":2, "279":3, "262":4, "251":5} # for /1000
+dict_4 = {"2758":-2, "2583":-1, "282":0, "762":1, "560":2, "962":3, "552":4, "600":5, "417":99}
 
 class Tile:
 	def __init__(self, x, y, num=-1):
@@ -32,8 +35,17 @@ def open_webpage(url="http://minesweeperonline.com/#150", sleep=2.7):
 	time.sleep(sleep)
 
 def uid_from_img(img):
-	return int(np.sum(img)/10)
-	#return np.sum( np.where(img==[192,192,192], [0,0,0], img) ) # replaces gray color with 0s
+	img_array = np.array(img)
+	#print("r1i", img_array[1])
+	img_array = np.where(img_array==np.array([192,192,192]), np.array([0,0,0]), (img_array/50).astype(int))
+	#print("r1f", img_array[1])
+	return np.sum(img_array)
+	#return int(np.sum(img)/1000)
+
+	# b = np.where(img==[192,192,192], [0,0,0], img) # replaces gray color with 0s
+	# print("b:", b)
+	# return np.sum(b)
+
 	#sub_img_small = np.array(sub_img.resize((1,1), Image.ANTIALIAS))[0][0] # this can't differentiate between 3 and 4?
 	#return np.sum(sub_img_small)
 
@@ -48,8 +60,10 @@ def neighbors(x, y, grid):
 	tiles = []
 	for i in range(-1, 2):
 		for j in range(-1, 2):
-			if not (i == 0 and j == 0) and x+j<num_width and y+i<num_height: # this tile isn't at (x,y) and isnt out of the grid
-				tiles.append(grid[y+i][x+j])
+			nx = x+i
+			ny = y+j
+			if not (i == 0 and j == 0) and nx<num_width and ny<num_height and nx>=0 and ny>=0: # this tile isn't at (x,y) and isn't outside of the grid
+				tiles.append(grid[ny][nx])
 	return tiles
 
 
@@ -62,17 +76,19 @@ num_height = 16 # 16
 
 topleft = pyautogui.locateOnScreen('tile.png', confidence=0.9)
 
-tile_size = topleft[2] # assumes width and height are the same
+tile_size = topleft[2] # assumes tile width and height are the same
 roi = [ topleft[0], topleft[1], topleft[2]*num_width, topleft[3]*num_height ] # xywh
-print(roi)
+click_offset = tile_size/2
+#print(roi)
 # outline roi
 #mouse(roi[0], roi[1], 0.1)
 #mouse(roi[0]+roi[2], roi[1]+roi[3], 0.1)
 #time.sleep(0.1)
 
 # activates first squares
-mouse(roi[0]+roi[2]/2, roi[1]+roi[3]/2, click=True) # click middle
-#mouse(roi[0]+2, roi[1]+2, click=True) # click top left
+mouse(roi[0]+roi[2]/2, roi[1]+roi[3]/2, click=True) # click the middle tile
+#mouse(roi[0]+click_offset, roi[1]+click_offset, click=True) # click the top left tile
+#mouse(roi[0]+click_offset+24*6, roi[1]+click_offset, click=True, button="right")
 mouse(1,1)
 
 
@@ -131,11 +147,11 @@ def get_grid_color():
 
 			sub_img = img.crop(tuple(region))
 			uid = uid_from_img(sub_img)
-
-			if(str(uid) in dict_sum_all.keys()): # this number is in the dict already
-				row.append( Tile(tile_x, tile_y, dict_sum_all[str(uid)]) )
+			#break
+			if(str(uid) in dict_4.keys()): # this number is in the dict already
+				row.append( Tile(tile_x, tile_y, dict_4[str(uid)]) )
 			else:
-				row.append( Tile(tile_x, tile_y, uid) )
+				row.append( Tile(tile_x, tile_y, uid*-1) ) # TODO does this help to prevent random clicks in random places?
 
 			#print("reg: {}   avg rgb: {}   avg sum: {}".format(region, sub_img_small, num))
 
@@ -163,14 +179,15 @@ def do_clicks(grid):
 			if tile.num > 0 and num_count(tile_neighbors, -2) == tile.num: # can safely click all tiles around this tile
 				for t in tile_neighbors:
 					if t.num == -1 and t not in left_click_tiles:
+						#print("adding lct", t)
 						left_click_tiles.append(t)
 
 	for right_click_tile in right_click_tiles:
-		mouse(2+roi[0]+right_click_tile.x*tile_size, 2+roi[1]+right_click_tile.y*tile_size, dur=0, click=True, button="right")
+		mouse(click_offset+roi[0]+right_click_tile.x*tile_size, click_offset+roi[1]+right_click_tile.y*tile_size, dur=0, click=True, button="right")
 
 	#print("len lc: " + str(len(left_click_tiles)))
 	for left_click_tile in left_click_tiles:
-		mouse(2+roi[0]+left_click_tile.x*tile_size, 2+roi[1]+left_click_tile.y*tile_size, dur=0, click=True, button="left")
+		mouse(click_offset+roi[0]+left_click_tile.x*tile_size, click_offset+roi[1]+left_click_tile.y*tile_size, dur=0, click=True, button="left")
 		#print("lc: {}".format(left_click_tile))
 
 	if len(left_click_tiles) == 0: # there are no easy clicks, so the grid needs to be rescanned
@@ -187,23 +204,24 @@ while running:
 
 	grid = get_grid_color()
 
+	#print("===")
 	for row in grid: # prints unknown tile nums
 		#row_text = ""
 		for t in row:
-			if t.num > 500: # there's an unknown number
+			#row_text += t.str_pad() + " "
+			if abs(t.num) > 100: # there's an unknown number
 				print("unknown: " + str(t))
 			if t.num == 99: # there's a bomb on the screen!
 				print("bomb detected!")
 				running = False
 				break
-		# 	row_text += t.str_pad() + " "
-		# print(row_text)
+		#print(row_text)
 
 	# print("\nns: ")
 	# ns = neighbors(14, 8, grid)
 	# for t in ns:
 	# 	print(t)
-
+	
 	did_click = do_clicks(grid)
 
 	if did_click == False:
